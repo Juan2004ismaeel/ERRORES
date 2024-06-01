@@ -1,46 +1,80 @@
-let BaseDeDatos = [
+const BaseDeDatos = [
     {
         id: 'a',
         nombre: "Juan",
         apellido: "Perez",
         edad: 66,
-        profecion: "Ing Mecanico"
+        profesion: "Ing Mecanico"
     },
     {
         id: 2,
         nombre: "Sofía",
         apellido: "Rodríguez",
         edad: 22,
-        profecion: "Lic Marketing Digital"
+        profesion: "Lic Marketing Digital"
     },
     {
         id: 3,
         nombre: "Mariana",
         apellido: "García",
         edad: 33,
-        profecion: "Ing Sistemas Computacionales"
+        profesion: "Ing Sistemas Computacionales"
     },
     {
         id: 4,
         nombre: null,
         apellido: "Martínez",
         edad: 18,
-        profecion: "Ing Industrial"
+        profesion: "Ing Industrial"
     },
     {
         id: 5,
         nombre: "Valentina",
         apellido: "Gómez",
         edad: 26,
-        profecion: "Lic Derecho"
+        profesion: "Lic Derecho"
     },
     {
         id: 6,
         nombre: "Alejandro",
         apellido: "Flores",
         edad: 17,
+        
     },
 ];
+
+class ErrorPersonalizado extends Error {
+    constructor(message) {
+        super(message);
+        this.name = this.constructor.name;
+    }
+}
+
+class ErrorPropiedadNoEncontrada extends ErrorPersonalizado {
+    constructor(property) {
+        super(`La propiedad '${property}' no existe.`);
+        this.property = property;
+    }
+}
+
+class ErrorIDInvalido extends ErrorPersonalizado {
+    constructor() {
+        super('El ID debe ser un número.');
+    }
+}
+
+class ErrorNombreNulo extends ErrorPersonalizado {
+    constructor() {
+        super('El nombre no puede ser null.');
+    }
+}
+
+class ErrorPropiedadFaltante extends ErrorPersonalizado {
+    constructor(property) {
+        super(`El registro no tiene la propiedad '${property}'.`);
+        this.property = property;
+    }
+}
 
 document.getElementById('consultaForm').addEventListener('submit', function (event) {
     event.preventDefault();
@@ -52,29 +86,58 @@ document.getElementById('consultaForm').addEventListener('submit', function (eve
     errorDiv.innerHTML = '';
 
     try {
-        if (isNaN(idInput)) {
-            throw new Error('El id no es un número.');
-        }
+        validarID(idInput);
+        const registro = encontrarRegistro(idInput);
 
-        const id = parseInt(idInput);
-        const registro = BaseDeDatos.find(item => item.id === id);
+        validarNombre(registro.nombre);
+        validarPropiedad(registro, 'profesion');
 
-        if (!registro) {
-            throw new Error('La propiedad no existe.');
-        }
-
-        if (registro.nombre === null) {
-            throw new Error('El nombre contiene un null.');
-        }
-
-        resultadoDiv.innerHTML = `
-            <p>ID: ${registro.id}</p>
-            <p>Nombre: ${registro.nombre}</p>
-            <p>Apellido: ${registro.apellido}</p>
-            <p>Edad: ${registro.edad}</p>
-            <p>Profesión: ${registro.profecion || 'No especificado'}</p>
-        `;
+        mostrarRegistro(registro, resultadoDiv);
     } catch (error) {
-        errorDiv.innerHTML = error.message;
+        mostrarError(error, errorDiv);
     }
 });
+
+function validarID(id) {
+    if (isNaN(id)) {
+        throw new ErrorIDInvalido();
+    }
+}
+
+function encontrarRegistro(id) {
+    const registro = BaseDeDatos.find(item => item.id === parseInt(id));
+    if (!registro) {
+        throw new ErrorPropiedadNoEncontrada('ID');
+    }
+    return registro;
+}
+
+function validarNombre(nombre) {
+    if (nombre === null) {
+        throw new ErrorNombreNulo();
+    }
+}
+
+function validarPropiedad(objeto, propiedad) {
+    if (!objeto.hasOwnProperty(propiedad)) {
+        throw new ErrorPropiedadFaltante(propiedad);
+    }
+}
+
+function mostrarRegistro(registro, div) {
+    div.innerHTML = `
+        <p>ID: ${registro.id}</p>
+        <p>Nombre: ${registro.nombre}</p>
+        <p>Apellido: ${registro.apellido}</p>
+        <p>Edad: ${registro.edad}</p>
+        <p>Profesión: ${registro.profesion || 'No especificado'}</p>
+    `;
+}
+
+function mostrarError(error, div) {
+    if (error instanceof ErrorPersonalizado) {
+        div.innerHTML = error.message;
+    } else {
+        div.innerHTML = '<p>Error desconocido.</p>';
+    }
+}
